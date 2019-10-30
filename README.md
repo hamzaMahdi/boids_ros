@@ -1,4 +1,5 @@
 ## About
+forked from https://github.com/mkrizmancic/sphero_formation
 This repository contains algorithms developed for the student paper proposed for Rector's award at University of Zagreb.
 
 **Title**: Decentralized formation control for a multi-agent system of autonomous spherical robots
@@ -22,7 +23,7 @@ _OptiTrack_ is used for localization of robots. However, Spheros cannot be equip
 1. Set values for all desired parameters inside _launch/setup_sim.launch_.
 1. Set initial velocities in _cfg/sphero_init_vel.cfg_.
 1. In first terminal run `roscore` (optional)
-1. In second terminal run `roslaunch sphero_formation setup_real.launch`
+1. In second terminal run `roslaunch sphero_formation setup_sim.launch`
 1. In third terminal run `roslaunch sphero_formation reynolds_sim.launch`
 
 **Real world:**
