@@ -230,7 +230,7 @@ class Boid(object):
             a = angle_diff(self.old_heading, main_direction.arg() + 180)
             # We mustn't allow scaling to be negative.
             side_scaling = max(math.cos(math.radians(a)), 0)
-            # Divicde by number of obstacles to get average.
+            # Divide by number of obstacles to get average.
             main_direction = main_direction / len(avoids) * side_scaling
             safety_direction /= count
 
@@ -238,6 +238,20 @@ class Boid(object):
         # Final force is sum of two componets.
         # Force is not limited so this rule has highest priority.
         return main_direction + safety_direction
+
+    def follow_heading(self, angle, target):
+        '''compute rotational vel based on heading'''
+        kp=0.1
+        return (target-angle)*kp
+
+    def orient(self, target):
+        # Calculate the approach vector.
+        a = angle_diff(self.old_heading, target)
+        # We mustn't allow scaling to be negative.
+        side_scaling = max(math.cos(math.radians(a)), 0)
+        # Divide by number of obstacles to get average.
+        main_direction = side_scaling
+        return main_direction
 
     def compute_velocity(self, my_agent, nearest_agents, avoids):
         """Compute total velocity based on all components."""
@@ -280,6 +294,8 @@ class Boid(object):
             force += cohesion * self.cohesion_factor
             force += separation * self.separation_factor
             force += avoid * self.avoid_factor
+            #force += self.orient(60)
+            #self.agent.follow_heading(average_heading, 3)
             force.limit(self.max_force)
 
             # If agent is moving, apply constant friction force.
