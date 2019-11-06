@@ -42,7 +42,9 @@ class ReynoldsController(object):
         if self.params_set:
             # Compute agent's velocity and publish the command.
             ret_vel, viz = self.agent.compute_velocity(my_agent, nearest_agents, obstacles)
-
+            average_heading = self.markers.get_heading(viz)
+            print(average_heading)
+            #ret_vel.angular.z = self.agent.follow_heading(average_heading, 3)
             # This is for use with real robots (Spheros).
             if self.run_type == 'real':
                 cmd_vel = Twist()
@@ -55,6 +57,7 @@ class ReynoldsController(object):
 
             # Publish markers for visualization in Rviz.
             marker_array = self.markers.update_data(viz)
+
             self.markers_pub.publish(marker_array)
 
     def param_callback(self, data):
@@ -97,7 +100,7 @@ class ReynoldsController(object):
 
 if __name__ == '__main__':
     # Initialize the node and name it.
-    rospy.init_node('ReynoldsController')
+    rospy.init_node('ReynoldsController', log_level=rospy.DEBUG)
 
     # Go to class functions that do all the heavy lifting
     # Do error checking

@@ -236,6 +236,16 @@ class MarkerSet(object):
             self.visualization.markers = self.markers.values()
         return self.visualization
 
+    def get_heading(self, values):
+        if values is not None:
+            angle=0
+            iter = 0
+            for key in self.markers.keys():
+                data = values[key]
+                angle+= math.radians(data.arg())
+                iter+=1
+            return angle/iter
+        return 0
 
 class MAFilter(object):
     # TODO: remove if not necessary
