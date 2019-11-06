@@ -1,5 +1,5 @@
 ## About
-forked from https://github.com/mkrizmancic/sphero_formation
+forked from https://github.com/mkrizmancic/sphero_formation .
 This repository contains algorithms developed for the student paper proposed for Rector's award at University of Zagreb.
 
 **Title**: Decentralized formation control for a multi-agent system of autonomous spherical robots
