@@ -244,11 +244,11 @@ class Boid(object):
         kp=0.1
         return (target-angle)*kp
 
-    def orient(self, target):
+    def orient(self, force, target):
         # Calculate the approach vector.
-        a = angle_diff(self.old_heading, target)
+        a = force.x-target
         # We mustn't allow scaling to be negative.
-        side_scaling = max(math.cos(math.radians(a)), 0)
+        side_scaling = a*-0.1
         # Divide by number of obstacles to get average.
         main_direction = side_scaling
         return main_direction
@@ -294,6 +294,7 @@ class Boid(object):
             force += cohesion * self.cohesion_factor
             force += separation * self.separation_factor
             force += avoid * self.avoid_factor
+            force.x+= self.orient(force,1) #go right
             #force += self.orient(60)
             #self.agent.follow_heading(average_heading, 3)
             force.limit(self.max_force)
