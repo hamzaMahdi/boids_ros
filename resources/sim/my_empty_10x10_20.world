@@ -1,0 +1,42 @@
+include "definitions.inc"
+
+# load an environment bitmap
+floorplan
+(
+	name "my_empty_10x10"
+	bitmap "../maps/my_empty_10x10.bmp"
+	size [10 10 1]
+	pose [ 0 0 0 0 ]
+)
+
+# throw in robots
+sphero( pose [ 0.000000 0.000000 0.000 0.000 ] name "sphero_0" color "blue")
+sphero( pose [ -0.200000 0.000000 0.000 0.000 ] name "sphero_1" color "blue")
+sphero( pose [ -0.400000 0.000000 0.000 0.000 ] name "sphero_2" color "blue")
+sphero( pose [ -0.600000 0.000000 0.000 0.000 ] name "sphero_3" color "blue")
+sphero( pose [ -0.800000 0.000000 0.000 0.000 ] name "sphero_4" color "blue")
+sphero( pose [ -1.000000 0.000000 0.000 0.000 ] name "sphero_5" color "blue")
+sphero( pose [ -1.200000 0.000000 0.000 0.000 ] name "sphero_6" color "blue")
+sphero( pose [ -1.400000 0.000000 0.000 0.000 ] name "sphero_7" color "blue")
+sphero( pose [ -1.600000 0.000000 0.000 0.000 ] name "sphero_8" color "blue")
+sphero( pose [ -1.800000 0.000000 0.000 0.000 ] name "sphero_9" color "blue")
+sphero( pose [ 0.000000 0.200000 0.000 0.000 ] name "sphero_10" color "blue")
+sphero( pose [ -0.200000 0.200000 0.000 0.000 ] name "sphero_11" color "blue")
+sphero( pose [ -0.400000 0.200000 0.000 0.000 ] name "sphero_12" color "blue")
+sphero( pose [ -0.600000 0.200000 0.000 0.000 ] name "sphero_13" color "blue")
+sphero( pose [ -0.800000 0.200000 0.000 0.000 ] name "sphero_14" color "blue")
+sphero( pose [ -1.000000 0.200000 0.000 0.000 ] name "sphero_15" color "blue")
+sphero( pose [ -1.200000 0.200000 0.000 0.000 ] name "sphero_16" color "blue")
+sphero( pose [ -1.400000 0.200000 0.000 0.000 ] name "sphero_17" color "blue")
+sphero( pose [ -1.600000 0.200000 0.000 0.000 ] name "sphero_18" color "blue")
+sphero( pose [ -1.800000 0.200000 0.000 0.000 ] name "sphero_19" color "blue")
+sphero( pose [ 0.000000 0.400000 0.000 0.000 ] name "sphero_20" color "blue")
+sphero( pose [ -0.200000 0.400000 0.000 0.000 ] name "sphero_21" color "blue")
+sphero( pose [ -0.400000 0.400000 0.000 0.000 ] name "sphero_22" color "blue")
+sphero( pose [ -0.600000 0.400000 0.000 0.000 ] name "sphero_23" color "blue")
+sphero( pose [ -0.800000 0.400000 0.000 0.000 ] name "sphero_24" color "blue")
+sphero( pose [ -1.000000 0.400000 0.000 0.000 ] name "sphero_25" color "blue")
+sphero( pose [ -1.200000 0.400000 0.000 0.000 ] name "sphero_26" color "blue")
+sphero( pose [ -1.400000 0.400000 0.000 0.000 ] name "sphero_27" color "blue")
+sphero( pose [ -1.600000 0.400000 0.000 0.000 ] name "sphero_28" color "blue")
+sphero( pose [ -1.800000 0.400000 0.000 0.000 ] name "sphero_29" color "blue")
