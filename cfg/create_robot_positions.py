@@ -1,6 +1,6 @@
 # note : this does not create the link between the map and the world. It only spawns the robots.
 # Please make sure to go back and manually add the path to the bitmap file
-file_name='my_empty_10x10_30.world'
+file_name='my_empty_10x10_20.world'
 f = open("../resources/sim/"+file_name,"w+")
 x = 0.0
 y = 0.0
