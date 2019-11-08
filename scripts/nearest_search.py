@@ -80,7 +80,7 @@ class NearestSearch(object):
             agent_position = agent.pose.pose.position
             nearest_agents = OdometryArray()
             nearest_agents.header.stamp = time
-
+            rospy.logdebug("pose of %s:    %s",key, agent_position)
             # Append odometry data from observed agent to the publishing message.
             nearest_agents.array.append(deepcopy(agent))
 
@@ -178,7 +178,7 @@ class NearestSearch(object):
 
 if __name__ == '__main__':
     # Initialize the node and name it.
-    rospy.init_node('NearestSearch')
+    rospy.init_node('NearestSearch')#, log_level=rospy.DEBUG)
 
     # Go to class functions that do all the heavy lifting.
     # Do error checking.

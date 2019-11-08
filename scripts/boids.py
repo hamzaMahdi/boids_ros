@@ -110,6 +110,7 @@ class Boid(object):
         self.crowd_radius = params['crowd_radius']
         self.search_radius = params['search_radius']
         self.avoid_radius = params['avoid_radius']
+        self.avoid_kp = params['avoid_kp']
 
         # Scaling is calculated so that force is maximal when agent is
         # 0.85 * search_radius away from obstacle.
@@ -213,12 +214,17 @@ class Boid(object):
             obst_position *= -1        # Make vector point away from obstacle.
             obst_position.normalize()  # Normalize to get only direction.
             # Additionally, if obstacle is very close...
+            '''
             if d < self.avoid_radius:
                 # Scale lineary so that there is no force when agent is on the
                 # edge of minimum avoiding distance and force is maximum if the
                 # distance from the obstacle is zero.
                 safety_scaling = -2 * self.max_force / self.avoid_radius * d + 2 * self.max_force
                 safety_direction += obst_position * safety_scaling
+                count += 1
+            '''
+            if d < self.avoid_radius:
+                safety_direction += d * self.avoid_kp*obst_position
                 count += 1
 
             # For all other obstacles: scale with inverse square law.
@@ -231,7 +237,7 @@ class Boid(object):
             # We mustn't allow scaling to be negative.
             side_scaling = max(math.cos(math.radians(a)), 0)
             # Divide by number of obstacles to get average.
-            main_direction = main_direction / len(avoids) * side_scaling
+            main_direction = main_direction / len(avoids) * side_scaling*self.avoid_kp
             safety_direction /= count
 
         rospy.logdebug("avoids*:      %s", main_direction)
@@ -294,7 +300,7 @@ class Boid(object):
             force += cohesion * self.cohesion_factor
             force += separation * self.separation_factor
             force += avoid * self.avoid_factor
-            force.x+= self.orient(force,1) #go right
+            #force.x+= self.orient(force,1) #go right
             #force += self.orient(60)
             #self.agent.follow_heading(average_heading, 3)
             force.limit(self.max_force)

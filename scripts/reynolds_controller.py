@@ -64,7 +64,7 @@ class ReynoldsController(object):
         """Call method for updating flocking parameters from server."""
         param_names = ['alignment_factor', 'cohesion_factor', 'separation_factor', 'avoid_factor',
                        'max_speed', 'max_force', 'friction', 'crowd_radius',
-                       'search_radius', 'avoid_radius']
+                       'search_radius', 'avoid_radius', 'avoid_kp']
         # Dictionary for passing parameters.
         param_dict = {param: rospy.get_param('/dyn_reconf/' + param) for param in param_names}
         self.agent.update_parameters(param_dict)
@@ -100,7 +100,7 @@ class ReynoldsController(object):
 
 if __name__ == '__main__':
     # Initialize the node and name it.
-    rospy.init_node('ReynoldsController', log_level=rospy.DEBUG)
+    rospy.init_node('ReynoldsController')#, log_level=rospy.DEBUG)
 
     # Go to class functions that do all the heavy lifting
     # Do error checking
