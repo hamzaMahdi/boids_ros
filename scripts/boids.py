@@ -8,6 +8,7 @@ from geometry_msgs.msg import Twist
 from util import Vector2, angle_diff, MAFilter
 
 
+# the three functions below interface the standard ROS messages with the Vector2 type
 def get_agent_velocity(agent):
     """Return agent velocity as Vector2 instance."""
     vel = Vector2()
@@ -33,66 +34,20 @@ def get_obst_position(obst):
 
 
 class Boid(object):
-    """
-    An implementation of Craig Reynolds' flocking rules and boid objects.
-
-    Each boid (bird-oid object) maneuvers based on the positions and velocities
-    of its nearby flockmates. Computation is based on three components:
-    1) alignment: steer towards the average heading of local flockmates
-    2) cohesion: steer to move toward the average position of local flockmates
-    3) separation: steer to avoid crowding local flockmates.
-    Additionally, 4th component, avoid, is implemented where boids steer away
-    from obstacles in their search radius.
-
-    Each component yields a force on boid. Total force then gives the
-    acceleration which is integrated to boid's velocity. Force and velocity are
-    limited to the specified amount.
-
-    State:
-        position (Vector2): Boid's position
-        velocity (Vector2): Boid's velocity
-
-    Parameters:
-        mass (double): Boid's mass
-        alignment_factor (double): Weight for alignment component
-        cohesion_factor (double): Weight for cohesion component
-        separation_factor (double): Weight for separation component
-        avoid_factor (double): Weight for obstacle avoiding component
-        max_speed (double): Velocity upper limit
-        max_force (double): Force upper limit
-        friction (double): Constant friction force
-        crowd_radius (double): Radius to avoid crowding
-        search_radius (double): Boid's sensing radius
-        avoid_radius (double): Radius to avoid obstacles
-
-    Methods:
-        update_parameters(self): Save parameters in class variables
-        compute_alignment(self, nearest_agents): Return alignment component
-        compute_cohesion(self, nearest_agents): Return cohesion component
-        compute_separation(self, nearest_agents): Return separation component
-        compute_avoids(self, avoids): Return avoid component
-        compute_velocity(self, my_agent, nearest_agents, avoids):
-            Compute total velocity based on all components
-    """
 
     def __init__(self, initial_velocity_x, initial_velocity_y, wait_count, start_count, frequency):
         """Create an empty boid and update parameters."""
         self.position = Vector2()
         self.velocity = Vector2()
-        self.mass = 0.18                # Mass of Sphero robot in kilograms
-        self.wait_count = wait_count    # Waiting time before starting
+        self.mass = 0.18  # Mass of Sphero robot in kilograms
+        self.wait_count = wait_count  # Waiting time before starting
         self.start_count = start_count  # Time during which initial velocity is being sent
-        self.frequency = frequency      # Control loop frequency
+        self.frequency = frequency  # Control loop frequency
 
         # Set initial velocity
         self.initial_velocity = Twist()
         self.initial_velocity.linear.x = initial_velocity_x
         self.initial_velocity.linear.y = initial_velocity_y
-
-        # UNCOMMENT IF USING FILTER
-        # # Initialize moving average filters.
-        # self.x_filter = MAFilter(3)
-        # self.y_filter = MAFilter(3)
 
         # This dictionary holds values of each flocking components and is used
         # to pass them to the visualization markers publisher.
@@ -106,19 +61,18 @@ class Boid(object):
         self.avoid_factor = params['avoid_factor']
         self.max_speed = params['max_speed']
         self.max_force = params['max_force']
-        self.friction = params['friction']
         self.crowd_radius = params['crowd_radius']
         self.search_radius = params['search_radius']
         self.avoid_radius = params['avoid_radius']
         self.avoid_kp = params['avoid_kp']
 
         # Scaling is calculated so that force is maximal when agent is
-        # 0.85 * search_radius away from obstacle.
+        # 0.85 * search_radius away from obstacle. Formula was obtained from https://github.com/mkrizmancic
         self.avoid_scaling = 1 / ((0.85 * self.search_radius) ** 2 * self.max_force)
 
         # Scaling is calculated so that cohesion and separation forces
-        # are equal when agents are crowd_radius apart.
-        self.separation_scaling = self.search_radius / self.crowd_radius ** 3 / self.max_force
+        # are equal when agents are crowd_radius apart. Formula was obtained from https://github.com/mkrizmancic
+        self.separation_gain = self.search_radius / self.crowd_radius ** 3 / self.max_force
 
         rospy.loginfo(rospy.get_caller_id() + " -> Parameters updated")
         rospy.logdebug('alignment_factor:  %s', self.alignment_factor)
@@ -127,48 +81,28 @@ class Boid(object):
         rospy.logdebug('avoid_factor:  %s', self.avoid_factor)
         rospy.logdebug('max_speed:  %s', self.max_speed)
         rospy.logdebug('max_force:  %s', self.max_force)
-        rospy.logdebug('friction:  %s', self.friction)
         rospy.logdebug('crowd_radius:  %s', self.crowd_radius)
         rospy.logdebug('search_radius:  %s', self.search_radius)
         rospy.logdebug('avoid_radius:  %s', self.avoid_radius)
 
-    def compute_alignment(self, nearest_agents):
-        """Return alignment component."""
-        mean_velocity = Vector2()
-        steer = Vector2()
-        # Find mean direction of neighboring agents.
-        for agent in nearest_agents:
-            agent_velocity = get_agent_velocity(agent)
-            mean_velocity += agent_velocity
-        rospy.logdebug("alignment*:   %s", mean_velocity)
-
-        # Steer toward calculated mean direction with maximum velocity.
-        if nearest_agents:
-            mean_velocity.set_mag(self.max_speed)
-            steer = mean_velocity - self.velocity
-            steer.limit(self.max_force)
-        return steer
-
-    def compute_cohesion(self, nearest_agents):
-        """Return cohesion component."""
+    def rule1_cohesion(self, nearest_agents):
         mean_position = Vector2()
         direction = Vector2()
         # Find mean position of neighboring agents.
         for agent in nearest_agents:
-            agent_position = get_agent_position(agent)
-            mean_position += agent_position
+            mean_position += get_agent_position(agent)
 
-        # Apply force in the direction of calculated mean position.
-        # Force is proportional to agents' distance from the mean.
+        # average but dont divide by zero.
         if nearest_agents:
             direction = mean_position / len(nearest_agents)
             rospy.logdebug("cohesion*:    %s", direction)
-            d = direction.norm()
-            direction.set_mag((self.max_force * (d / self.search_radius)))
+            # limit the force to max if necessary
+            direction.set_mag((self.max_force * (direction.norm() / self.search_radius)))
+            if direction.norm() > self.max_force:
+                direction.set_mag(self.max_force)
         return direction
 
-    def compute_separation(self, nearest_agents):
-        """Return separation component."""
+    def rule2_separation(self, nearest_agents):
         direction = Vector2()
         count = 0
 
@@ -176,90 +110,88 @@ class Boid(object):
         for agent in nearest_agents:
             agent_position = get_agent_position(agent)
             d = agent_position.norm()
+            # we only want to calculate if the agents are close to each other
             if d < self.crowd_radius:
                 count += 1
-                agent_position *= -1        # Make vector point away from other agent.
+                agent_position *= -1  # Make vector point away from other agent.
                 agent_position.normalize()  # Normalize to get only direction.
                 # Vector's magnitude is proportional to inverse square of the distance between agents.
-                agent_position = agent_position / (self.separation_scaling * d**2)
+                # this formula was obtained from https://github.com/mkrizmancic
+                agent_position = agent_position / (self.separation_gain * d ** 2)
                 direction += agent_position
-
+        # average but dont divide by 0 (if agents are sufficiently far from each other)
         if count:
-            # Devide by number of close-by agents to get average force.
             direction /= count
-            direction.limit(2 * self.max_force)  # 2 * max_force gives this rule a slight priority.
+            # 3 * max force because priority is given to obstacle avoidance as suggested Conrad Parker
+            if direction.norm() > 3 * self.max_force:
+                direction.set_mag(3 * self.max_force)
         rospy.logdebug("separation*:  %s", direction)
         return direction
 
-    def compute_avoids(self, avoids):
-        """
-        Return avoid component.
+    def rule3_alignment(self, nearest_agents):
+        mean_velocity = Vector2()
+        steer = Vector2()
+        # Find mean direction of neighboring agents.
+        for agent in nearest_agents:
+            mean_velocity += get_agent_velocity(agent)
+        rospy.logdebug("alignment*:   %s", mean_velocity)
+        if nearest_agents:
+            mean_velocity.set_mag(self.max_speed)
+            steer = mean_velocity - self.velocity
+            if steer.norm() > self.max_force:
+                steer.set_mag(self.max_force)
+        return steer
 
-        This rule consists of two components. The first is active for all
-        obstacles within range and depends on agent's distance from obstacle as
-        well as its aproach angle. Force is maximum when agent approaches the
-        obstacle head-on and minimum if obstacle is to the side of an agent.
-        Second component depends only on distance and only obstacles closer than
-        avoid_radius are taken into account. This is to ensure minimal distance
-        from obstacles at all times.
+    def braitenberg(self, obstacles):
+        """
+        obstacle avoidance based on simple force field representation of obstacle
         """
         main_direction = Vector2()
         safety_direction = Vector2()
         count = 0
 
         # Calculate repulsive force for each obstacle in sight.
-        for obst in avoids:
+        for obst in obstacles:
             obst_position = get_obst_position(obst)
             d = obst_position.norm()
-            obst_position *= -1        # Make vector point away from obstacle.
+            obst_position *= -1  # Make vector point away from obstacle.
             obst_position.normalize()  # Normalize to get only direction.
-            # Additionally, if obstacle is very close...
-            '''
+            # If obstacle is very close
             if d < self.avoid_radius:
-                # Scale lineary so that there is no force when agent is on the
-                # edge of minimum avoiding distance and force is maximum if the
-                # distance from the obstacle is zero.
-                safety_scaling = -2 * self.max_force / self.avoid_radius * d + 2 * self.max_force
-                safety_direction += obst_position * safety_scaling
-                count += 1
-            '''
-            if d < self.avoid_radius:
-                safety_direction += d * self.avoid_kp*obst_position
+                safety_direction += d * self.avoid_kp * obst_position
                 count += 1
 
             # For all other obstacles: scale with inverse square law.
-            obst_position = obst_position / (self.avoid_scaling * d**2)
+            # this formula was obtained from https://github.com/mkrizmancic
+            obst_position = obst_position / (self.avoid_scaling * d ** 2)
             main_direction += obst_position
 
-        if avoids:
-            # Calculate the approach vector.
-            a = angle_diff(self.old_heading, main_direction.arg() + 180)
-            # We mustn't allow scaling to be negative.
-            side_scaling = max(math.cos(math.radians(a)), 0)
-            # Divide by number of obstacles to get average.
-            main_direction = main_direction / len(avoids) * side_scaling*self.avoid_kp
+        if obstacles:
+            # this calculates the average and makes sure the turning force is not too extreme,
+            # as well as turning the avoidance based on simple proportionality factor
+            main_direction = main_direction / len(obstacles) * self.avoid_kp * \
+                             max(math.cos(math.radians(angle_diff(self.old_heading, main_direction.arg() + 180))), 0)
+
+        if count:
             safety_direction /= count
 
         rospy.logdebug("avoids*:      %s", main_direction)
-        # Final force is sum of two componets.
-        # Force is not limited so this rule has highest priority.
+
         return main_direction + safety_direction
 
     def follow_heading(self, angle, target):
         '''compute rotational vel based on heading'''
-        kp=0.1
-        return (target-angle)*kp
+        kp = 0.1
+        return (target - angle) * kp
 
     def orient(self, force, target):
-        # Calculate the approach vector.
-        a = force.x-target
-        # We mustn't allow scaling to be negative.
-        side_scaling = a*-0.1
-        # Divide by number of obstacles to get average.
+        '''compute linear vel based on heading'''
+        a = force.x - target
+        side_scaling = a * -0.1
         main_direction = side_scaling
         return main_direction
 
-    def compute_velocity(self, my_agent, nearest_agents, avoids):
+    def move_all_agents_to_new_position(self, my_agent, nearest_agents, obstacles):
         """Compute total velocity based on all components."""
 
         # While waiting to start, send zero velocity and decrease counter.
@@ -283,11 +215,11 @@ class Boid(object):
             self.old_velocity = Vector2(self.velocity.x, self.velocity.y)
             rospy.logdebug("old_velocity: %s", self.velocity)
 
-            # Compute all the components.
-            alignment = self.compute_alignment(nearest_agents)
-            cohesion = self.compute_cohesion(nearest_agents)
-            separation = self.compute_separation(nearest_agents)
-            avoid = self.compute_avoids(avoids)
+            # calculate force fields
+            cohesion = self.rule1_cohesion(nearest_agents)
+            separation = self.rule2_separation(nearest_agents)
+            alignment = self.rule3_alignment(nearest_agents)
+            avoid = self.braitenberg(obstacles)
 
             rospy.logdebug("alignment:    %s", alignment)
             rospy.logdebug("cohesion:     %s", cohesion)
@@ -300,38 +232,16 @@ class Boid(object):
             force += cohesion * self.cohesion_factor
             force += separation * self.separation_factor
             force += avoid * self.avoid_factor
-            #force.x+= self.orient(force,1) #go right
-            #force += self.orient(60)
-            #self.agent.follow_heading(average_heading, 3)
+            # force.x+= self.orient(force,1) #go right
             force.limit(self.max_force)
-
-            # If agent is moving, apply constant friction force.
-            # If agent's velocity is less then friction / 2, it would get
-            # negative velocity. In this case, just stop it.
-            if self.velocity.norm() > self.friction / 2:
-                force += self.friction * -1 * self.velocity.normalize(ret=True)
-            else:
-                self.velocity = Vector2()
-
+            # those are not necessary (can be made into a single constant) but nice since they contain actual formualae
             acceleration = force / self.mass
-
-            # Calculate total velocity (delta_velocity = acceleration * delta_time).
             self.velocity += acceleration / self.frequency
             self.velocity.limit(self.max_speed)
 
             rospy.logdebug("force:        %s", force)
             rospy.logdebug("acceleration: %s", acceleration / self.frequency)
             rospy.logdebug("velocity:     %s\n", self.velocity)
-
-            # UNCOMMENT IF USING FILTER
-            # # Apply moving average filter on calculated velocity
-            # filtered = Twist()
-            # filtered.linear.x = self.x_filter.step(self.velocity.x)
-            # filtered.linear.y = self.y_filter.step(self.velocity.y)
-
-            # # Store raw and filtered velocity in a list for later analysis
-            # self.data_list.append([self.velocity.norm(), self.velocity.arg(),
-            #                        filtered.norm(), filtered.arg()])
 
             # Return the the velocity as Twist message.
             vel = Twist()

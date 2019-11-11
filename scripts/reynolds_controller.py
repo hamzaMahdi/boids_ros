@@ -41,7 +41,7 @@ class ReynoldsController(object):
 
         if self.params_set:
             # Compute agent's velocity and publish the command.
-            ret_vel, viz = self.agent.compute_velocity(my_agent, nearest_agents, obstacles)
+            ret_vel, viz = self.agent.move_all_agents_to_new_position(my_agent, nearest_agents, obstacles)
             average_heading = self.markers.get_heading(viz)
             print(average_heading)
             #ret_vel.angular.z = self.agent.follow_heading(average_heading, 3)
