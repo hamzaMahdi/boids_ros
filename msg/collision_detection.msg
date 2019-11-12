@@ -1,0 +1,2 @@
+std_msgs/Bool agent_collision
+std_msgs/Bool wall_collision

@@ -11,7 +11,7 @@ from visualization_msgs.msg import MarkerArray
 from boids import Boid
 from util import MarkerSet
 from sphero_formation.msg import OdometryArray
-
+from sphero_formation.msg import collision_detection
 
 class ReynoldsController(object):
     """
@@ -41,24 +41,25 @@ class ReynoldsController(object):
 
         if self.params_set:
             # Compute agent's velocity and publish the command.
-            ret_vel, viz = self.agent.move_all_agents_to_new_position(my_agent, nearest_agents, obstacles)
-            average_heading = self.markers.get_heading(viz)
-            print(average_heading)
-            #ret_vel.angular.z = self.agent.follow_heading(average_heading, 3)
-            # This is for use with real robots (Spheros).
-            if self.run_type == 'real':
-                cmd_vel = Twist()
-                cmd_vel.linear.x = int(ret_vel.linear.x * 100)
-                cmd_vel.linear.y = int(ret_vel.linear.y * 100)
-                self.cmd_vel_pub.publish(cmd_vel)
-            # This is for use with simulation.
-            elif self.run_type == 'sim':
+            ret_vel, viz, collision_vector = self.agent.move_agent_to_new_position(my_agent, nearest_agents, obstacles)
+
+            # average heading based on speed. This is not ideal and should not be used for analysis
+            #average_heading = self.markers.get_heading(viz)
+            #print(average_heading)
+            if self.run_type == 'sim':
                 self.cmd_vel_pub.publish(ret_vel)
 
             # Publish markers for visualization in Rviz.
             marker_array = self.markers.update_data(viz)
 
             self.markers_pub.publish(marker_array)
+
+            # Publish collisions
+            collision_msg = collision_detection()
+            collision_msg.wall_collision.data = collision_vector[0]
+            collision_msg.wall_collision.data = collision_vector[1]
+            self.collisions_pub.publish(collision_msg)
+
 
     def param_callback(self, data):
         """Call method for updating flocking parameters from server."""
@@ -86,7 +87,7 @@ class ReynoldsController(object):
         # Create a publisher for commands.
         self.cmd_vel_pub = rospy.Publisher('cmd_vel', Twist, queue_size=frequency)
         self.markers_pub = rospy.Publisher('markers', MarkerArray, queue_size=frequency)
-
+        self.collisions_pub = rospy.Publisher('collisions', collision_detection, queue_size=frequency)
         # Create subscribers.
         rospy.Subscriber('/dyn_reconf/parameter_updates', Config, self.param_callback, queue_size=1)
 

@@ -43,7 +43,9 @@ class Boid(object):
         self.wait_count = wait_count  # Waiting time before starting
         self.start_count = start_count  # Time during which initial velocity is being sent
         self.frequency = frequency  # Control loop frequency
-
+        # make sure that if the object is already in collision, it does not count again
+        self.prev_collision = False
+        self.prev_wall_collision = False
         # Set initial velocity
         self.initial_velocity = Twist()
         self.initial_velocity.linear.x = initial_velocity_x
@@ -84,6 +86,38 @@ class Boid(object):
         rospy.logdebug('crowd_radius:  %s', self.crowd_radius)
         rospy.logdebug('search_radius:  %s', self.search_radius)
         rospy.logdebug('avoid_radius:  %s', self.avoid_radius)
+
+
+    def check_collisions(self, nearest_agents,obstacles):
+        sphero_radius = 0.036
+        collision = False
+        wall_collision = False
+        # Find if nearby agents are too close
+        for agent in nearest_agents:
+            # set the minimum distance before counting a collision
+            if get_agent_position(agent).norm()<=sphero_radius*2.3: 
+                print("collision detected")
+                collision = True
+
+        for obstacle in obstacles:
+            # set the minimum distance before counting a collision
+            if get_obst_position(obstacle).norm()<=sphero_radius*1.15: 
+                print("wall collision detected")
+                wall_collision = True
+        # save the current collision state
+        if(collision and not self.prev_collision):
+            self.prev_collision = True
+        else:
+            collision = False
+        if(wall_collision and not self.prev_wall_collision):
+            self.prev_wall_collision = True
+        else:
+            wall_collision = False
+        if(not collision):
+            self.prev_collision = False
+        if(not wall_collision):
+            self.prev_wall_collision = False
+        return collision, wall_collision
 
     def rule1_cohesion(self, nearest_agents):
         mean_position = Vector2()
@@ -191,7 +225,7 @@ class Boid(object):
         main_direction = side_scaling
         return main_direction
 
-    def move_all_agents_to_new_position(self, my_agent, nearest_agents, obstacles):
+    def move_agent_to_new_position(self, my_agent, nearest_agents, obstacles):
         """Compute total velocity based on all components."""
 
         # While waiting to start, send zero velocity and decrease counter.
@@ -199,14 +233,14 @@ class Boid(object):
             self.wait_count -= 1
             rospy.logdebug("wait " + '{}'.format(self.wait_count))
             rospy.logdebug("velocity:\n%s", Twist().linear)
-            return Twist(), None
+            return Twist(), None, [False, False]
 
         # Send initial velocity and decrease counter.
         elif self.start_count > 0:
             self.start_count -= 1
             rospy.logdebug("start " + '{}'.format(self.start_count))
             rospy.logdebug("velocity:\n%s", self.initial_velocity.linear)
-            return self.initial_velocity, None
+            return self.initial_velocity, None, [False, False]
 
         # Normal operation, velocity is determined using Reynolds' rules.
         else:
@@ -215,6 +249,9 @@ class Boid(object):
             self.old_velocity = Vector2(self.velocity.x, self.velocity.y)
             rospy.logdebug("old_velocity: %s", self.velocity)
 
+            # detect collisions
+            collision_vector = self.check_collisions(nearest_agents,obstacles)
+            
             # calculate force fields
             cohesion = self.rule1_cohesion(nearest_agents)
             separation = self.rule2_separation(nearest_agents)
@@ -232,7 +269,7 @@ class Boid(object):
             force += cohesion * self.cohesion_factor
             force += separation * self.separation_factor
             force += avoid * self.avoid_factor
-            # force.x+= self.orient(force,1) #go right
+            #force.x+= self.orient(force,1) #go right
             force.limit(self.max_force)
             # those are not necessary (can be made into a single constant) but nice since they contain actual formualae
             acceleration = force / self.mass
@@ -257,4 +294,4 @@ class Boid(object):
             self.viz_components['acceleration'] = acceleration / self.frequency
             self.viz_components['velocity'] = self.velocity
             self.viz_components['estimated'] = self.old_velocity
-            return vel, self.viz_components
+            return vel, self.viz_components, collision_vector
