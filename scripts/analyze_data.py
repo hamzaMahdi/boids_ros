@@ -51,42 +51,46 @@ def calculate_distance(xpos,avg_xpos,ypos,avg_ypos,total_num_of_robots):
         distance.append(norm(xpos[robot],avg_xpos,ypos[robot],avg_ypos))
     return distance
 
+# data extractor
+def extract_data(bag,total_num_of_robots):
+    boids = [0 for i in range(total_num_of_robots)]
+    ypos = [0 for i in range(total_num_of_robots)]
+    xpos = [0 for i in range(total_num_of_robots)]
+    collision_mask = [[] for i in range(total_num_of_robots)]
+    total_agent_collisions = 0
+    total_wall_collisions = 0
+    for robot in range(0, total_num_of_robots): 
+        boids[robot] = []
+        xpos[robot] = []
+        ypos[robot] = []
+        for topic, msg, t in bag.read_messages("/robot_" + str(robot) + "/collisions"):
+            collision_mask[robot].append(msg.agent_collision.data or msg.wall_collision.data)
+            if(msg.agent_collision.data):
+                total_agent_collisions+=1
+            if(msg.wall_collision.data):
+                total_wall_collisions+=1
 
+        for topic, msg, t in bag.read_messages("/robot_" + str(robot) + "/odom"):
+            boid_pose = np.zeros(2)  
+            boid_pose[0] = msg.pose.pose.position.x
+            boid_pose[1] = msg.pose.pose.position.y
+            boids[robot].append(boid_pose)
+            xpos[robot].append(boid_pose[0])
+            ypos[robot].append(boid_pose[1])
+    return xpos,ypos,total_agent_collisions,total_wall_collisions,collision_mask
+    
 # read bag file
 # TODO: make the name of the file a parameter
-bag = rosbag.Bag('2019-11-12-17-03-09.bag') 
+bag = rosbag.Bag('example.bag') 
 start_time = bag.get_start_time()
 end_time = bag.get_end_time()
 total_time = end_time - start_time
 print(total_time)
 total_num_of_robots = 7 #rospy.get_param("/num_of_robots", 20)
-boids = [0 for i in range(total_num_of_robots)]
-ypos = [0 for i in range(total_num_of_robots)]
-xpos = [0 for i in range(total_num_of_robots)]
-collision_mask = [[] for i in range(total_num_of_robots)]
-total_agent_collisions = 0
-total_wall_collisions = 0
 
-# extract data from bag
-for robot in range(0, total_num_of_robots): 
-    boids[robot] = []
-    xpos[robot] = []
-    ypos[robot] = []
-    for topic, msg, t in bag.read_messages("/robot_" + str(robot) + "/collisions"):
-        collision_mask[robot].append(msg.agent_collision.data or msg.wall_collision.data)
-        if(msg.agent_collision.data):
-            total_agent_collisions+=1
-        if(msg.wall_collision.data):
-            total_wall_collisions+=1
+# extract data from bag file
+xpos,ypos,total_agent_collisions,total_wall_collisions,collision_mask = extract_data(bag,total_num_of_robots)
 
-    for topic, msg, t in bag.read_messages("/robot_" + str(robot) + "/odom"):
-        boid_pose = np.zeros(2)  
-        boid_pose[0] = msg.pose.pose.position.x
-        boid_pose[1] = msg.pose.pose.position.y
-        boids[robot].append(boid_pose)
-        xpos[robot].append(boid_pose[0])
-        ypos[robot].append(boid_pose[1])
-    #print(collision_mask[robot])
 avg_xpos = average_positions(xpos,total_num_of_robots) 
 avg_ypos = average_positions(ypos,total_num_of_robots)
 pos = calculate_distance(xpos,avg_xpos,ypos,avg_ypos,total_num_of_robots)
