@@ -7,21 +7,13 @@ import message_filters as mf
 from dynamic_reconfigure.msg import Config
 from geometry_msgs.msg import Twist, PoseArray
 from visualization_msgs.msg import MarkerArray
-
+import rosbag
 from boids import Boid
 from util import MarkerSet
 from sphero_formation.msg import OdometryArray
 from sphero_formation.msg import collision_detection
 
 class ReynoldsController(object):
-    """
-    ROS node implementation of Reynolds' flocking algorithm.
-
-    This node represents a single agent in the flock. It subscribes to the list
-    of other agents within search radius. Velocity of the agent is calculated
-    based on Reynolds' flocking rules and this information is published to the
-    simulator or physical implementation of the agent.
-    """
 
     def callback(self, *data):
         """
@@ -59,6 +51,7 @@ class ReynoldsController(object):
             collision_msg.wall_collision.data = collision_vector[0]
             collision_msg.wall_collision.data = collision_vector[1]
             self.collisions_pub.publish(collision_msg)
+            # self.bag.write('cmd_vel', ret_vel)
 
 
     def param_callback(self, data):
@@ -94,6 +87,7 @@ class ReynoldsController(object):
         subs = [mf.Subscriber("nearest", OdometryArray), mf.Subscriber("avoid", PoseArray)]
         self.ts = mf.TimeSynchronizer(subs, 10)
         self.ts.registerCallback(self.callback)
+        #self.bag = rosbag.Bag('test.bag', 'w')
 
         # Keep program from exiting
         rospy.spin()

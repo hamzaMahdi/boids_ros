@@ -3,3 +3,6 @@
 
 # Debuggin data folder
 data/
+
+# bag files
+*.bag
