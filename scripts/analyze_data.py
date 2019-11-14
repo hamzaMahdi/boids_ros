@@ -80,7 +80,6 @@ def extract_data(bag,total_num_of_robots):
                 total_agent_collisions+=1
             if(msg.wall_collision.data):
                 total_wall_collisions+=1
-
         for topic, msg, t in bag.read_messages("/robot_" + str(robot) + "/cmd_vel"):
             xheading[robot].append(msg.linear.x)
             yheading[robot].append(msg.linear.y)
@@ -97,11 +96,11 @@ def extract_data(bag,total_num_of_robots):
 # TODO: make the name of the file a parameter
 file = str(sys.argv[1])
 bag = rosbag.Bag(file) 
+f = open(file+'.txt', "w")
 start_time = bag.get_start_time()
 end_time = bag.get_end_time()
 total_time = end_time - start_time
-print("Total run time (s): %f"%total_time)
-total_num_of_robots = 7 #rospy.get_param("/num_of_robots", 20)
+total_num_of_robots = int(input("please enter the number of robots\n"))#7 #rospy.get_param("/num_of_robots", 20)
 
 # extract data from bag file
 xpos,ypos,total_agent_collisions,total_wall_collisions,collision_mask,xheading,yheading = extract_data(bag,total_num_of_robots)
@@ -112,9 +111,16 @@ pos = calculate_distance(xpos,avg_xpos,ypos,avg_ypos,total_num_of_robots)
 avg_pos = average_positions(pos,total_num_of_robots)
 RMSE = average_RMSE(pos,avg_pos,total_num_of_robots)
 heading = get_heading(xheading,yheading,total_num_of_robots)
+print("Total run time (s): %f"%total_time)
 print("RMSE of flock distances %f"%RMSE)
 print("agent collisions %d" %total_agent_collisions)
 print("wall collisions %d" %total_wall_collisions)
+f.write("Total run time (s): %f\n"%total_time)
+f.write("Number of robots: %d\n"%total_num_of_robots)
+f.write("RMSE of flock distances %f\n"%RMSE)
+f.write("agent collisions %d\n" %total_agent_collisions)
+f.write("wall collisions %d\n" %total_wall_collisions)
+f.close()
 # for robot_idx in range(0, total_num_of_robots): 
 #     for robot2_idx in range(0, total_num_of_robots):
 #         if(robot_idx!=robot2_idx):
