@@ -1,5 +1,7 @@
 ## About
 Forked from https://github.com/mkrizmancic/sphero_formation.
+
+
 This is a modified repository meant to explore braitenberg bahviour in flocks.
 ## Installation
 Simply clone this repository inside ROS workspace and run `catkin_make` in workspace root.
