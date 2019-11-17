@@ -97,95 +97,108 @@ def extract_data(bag,total_num_of_robots):
 def get_output_name (file):
     return (file.split('/')[-1]).split('.')[0] 
 
-# read bag file
-# TODO: make the name of the file a parameter
-file = str(sys.argv[1])
-bag = rosbag.Bag(file)
-f = open("../results/"+get_output_name(file)+'.txt', "w")
-start_time = bag.get_start_time()
-end_time = bag.get_end_time()
-total_time = end_time - start_time
-total_num_of_robots = int(input("please enter the number of robots\n"))#7 #rospy.get_param("/num_of_robots", 20)
+# Read bag file
+# The dictionary refers to how many robots are in each test case.
+# The keys are the test cases and the values are the robot numbers
+num_robot_dict = {1:6, 2:6, 3:6, 4:6, 5:6, 6:12, 7:12, 8:12, 9:12, 10:12, 11:20,
+ 12:20, 13:20, 14:20, 15:20, 16:6, 17:6, 18:6, 19:12, 20:12, 21:12, 
+ 22:20, 23:20, 24:20, 25:6, 26:6, 27:6, 28:12, 29:12, 30:12, 31:20, 32:20, 33:20} 
+for i in range(16,34):
+    #file = str(sys.argv[1])
+    file = '../data/test_'+str(i)+'.bag'
+    bag = rosbag.Bag(file)
+    f = open("../results/"+get_output_name(file)+'.txt', "w")
+    start_time = bag.get_start_time()
+    end_time = bag.get_end_time()
+    total_time = end_time - start_time
+    #total_num_of_robots = int(input("please enter the number of robots for test %d\n"%i))#7 #rospy.get_param("/num_of_robots", 20)
+    total_num_of_robots = num_robot_dict[i]
+    print(total_num_of_robots)
+    try:
+        # extract data from bag file
+        xpos,ypos,total_agent_collisions,total_wall_collisions,collision_mask,xheading,yheading = extract_data(bag,total_num_of_robots)
 
-# extract data from bag file
-xpos,ypos,total_agent_collisions,total_wall_collisions,collision_mask,xheading,yheading = extract_data(bag,total_num_of_robots)
+        avg_xpos = average_positions(xpos,total_num_of_robots) 
+        avg_ypos = average_positions(ypos,total_num_of_robots)
+        pos = calculate_distance(xpos,avg_xpos,ypos,avg_ypos,total_num_of_robots)
+        avg_pos = average_positions(pos,total_num_of_robots)
+        avg_RMSE = average_RMSE(pos,avg_pos,total_num_of_robots)
+        heading = get_heading(xheading,yheading,total_num_of_robots)
+        print("Total run time (s): %f"%total_time)
+        print("RMSE of flock distances %f"%avg_RMSE)
+        print("agent collisions %d" %total_agent_collisions)
+        print("wall collisions %d" %total_wall_collisions)
+        f.write("Total run time (s): %f\n"%total_time)
+        f.write("Number of robots: %d\n"%total_num_of_robots)
+        f.write("RMSE of flock distances %f\n"%avg_RMSE)
+        f.write("agent collisions %d\n" %total_agent_collisions)
+        f.write("wall collisions %d\n" %total_wall_collisions)
+        f.close()
+        # for robot_idx in range(0, total_num_of_robots): 
+        #     for robot2_idx in range(0, total_num_of_robots):
+        #         if(robot_idx!=robot2_idx):
+        #             A = np.array(x_axis[robot_idx])
+        #             B = np.array(x_axis[robot_idx])
+        #             print((A==B).all())
+        #             #print(set(x_axis[robot_idx]).intersection(x_axis[robot2_idx])) # does not work 
 
-avg_xpos = average_positions(xpos,total_num_of_robots) 
-avg_ypos = average_positions(ypos,total_num_of_robots)
-pos = calculate_distance(xpos,avg_xpos,ypos,avg_ypos,total_num_of_robots)
-avg_pos = average_positions(pos,total_num_of_robots)
-RMSE = average_RMSE(pos,avg_pos,total_num_of_robots)
-heading = get_heading(xheading,yheading,total_num_of_robots)
-print("Total run time (s): %f"%total_time)
-print("RMSE of flock distances %f"%RMSE)
-print("agent collisions %d" %total_agent_collisions)
-print("wall collisions %d" %total_wall_collisions)
-f.write("Total run time (s): %f\n"%total_time)
-f.write("Number of robots: %d\n"%total_num_of_robots)
-f.write("RMSE of flock distances %f\n"%RMSE)
-f.write("agent collisions %d\n" %total_agent_collisions)
-f.write("wall collisions %d\n" %total_wall_collisions)
-f.close()
-# for robot_idx in range(0, total_num_of_robots): 
-#     for robot2_idx in range(0, total_num_of_robots):
-#         if(robot_idx!=robot2_idx):
-#             A = np.array(x_axis[robot_idx])
-#             B = np.array(x_axis[robot_idx])
-#             print((A==B).all())
-#             #print(set(x_axis[robot_idx]).intersection(x_axis[robot2_idx])) # does not work 
+        #generate graphs
+        fig = plt.figure(figsize=plt.figaspect(0.5))
+        ax = fig.add_subplot(2, 1, 1, projection='3d')
+        labels = []
 
-#generate graphs
-fig = plt.figure(figsize=plt.figaspect(0.5))
-ax = fig.add_subplot(2, 1, 1, projection='3d')
-labels = []
+        for robot in range(0, total_num_of_robots): 
+            fs = len(ypos[robot])/total_time # get sampling frequency
+            t = np.arange(0,total_time,1/fs) # create time step array
+            check = len(ypos[robot])<len(t)
+            if(check):
+                t = trim(t,len(ypos[robot]))
+            else:
+                ypos[robot] = trim(ypos[robot],len(t))
+                xpos[robot] = trim(xpos[robot],len(t))
 
-for robot in range(0, total_num_of_robots): 
-    fs = len(ypos[robot])/total_time # get sampling frequency
-    t = np.arange(0,total_time,1/fs) # create time step array
-    check = len(ypos[robot])<len(t)
-    if(check):
-        t = trim(t,len(ypos[robot]))
-    else:
-        ypos[robot] = trim(ypos[robot],len(t))
-        xpos[robot] = trim(xpos[robot],len(t))
+            #if(len(t)==len(ypos[robot])):# temporary fix, remove this in the future
+                #plt.plot( xpos[robot],ypos[robot])
+            ax.plot3D(t,xpos[robot], ypos[robot])
+            ax.view_init(30, -50)
+            labels.append(r'robot %s' % (robot))
+        ax.set_xlabel('time (s)')
+        ax.set_ylabel('x position')
+        ax.set_zlabel('y position')
+        plt.legend(labels, ncol=10   , loc='lower center',
+                bbox_to_anchor=[0.5, 1.1], 
+                columnspacing=1.0, labelspacing=0.0,
+                handletextpad=0.0, handlelength=1.5,
+                fancybox=True, shadow=True)
+        plt.title("Robot Position Over Time for "+get_output_name(file))
 
-    if(len(t)==len(ypos[robot])):# temporary fix, remove this in the future
-        #plt.plot( xpos[robot],ypos[robot])
-        ax.plot3D(t,xpos[robot], ypos[robot])
-        labels.append(r'robot %s' % (robot))
-ax.set_xlabel('time (s)')
-ax.set_ylabel('x position')
-ax.set_zlabel('y position')
-plt.legend(labels, ncol=4   , loc='lower center',
-           bbox_to_anchor=[0.5, 1.1], 
-           columnspacing=1.0, labelspacing=0.0,
-           handletextpad=0.0, handlelength=1.5,
-           fancybox=True, shadow=True)
-plt.title("Robot Position Over Time for "+get_output_name(file))
+        fig.add_subplot(2, 1, 2)
+        labels = []
 
-fig.add_subplot(2, 1, 2)
-labels = []
+        for robot in range(0, total_num_of_robots): 
+            fs = len(heading[robot])/total_time # get sampling frequency
+            t = np.arange(0,total_time,1/fs) # create time step array
+            check = len(heading[robot])<len(t)
+            if(check):
+                t = trim(t,len(heading[robot]))
+            else:
+                heading[robot] = trim(heading[robot],len(t))
 
-for robot in range(0, total_num_of_robots): 
-    fs = len(heading[robot])/total_time # get sampling frequency
-    t = np.arange(0,total_time,1/fs) # create time step array
-    check = len(heading[robot])<len(t)
-    if(check):
-        t = trim(t,len(heading[robot]))
-    else:
-        heading[robot] = trim(heading[robot],len(t))
+            if(len(t)==len(heading[robot])):# temporary fix, remove this in the future
+                plt.plot( t,heading[robot])
+                #labels.append(r'robot %s' % (robot))
+        plt.xlabel('time (s)')
+        plt.ylabel('heading (degrees)')
+        # plt.legend(labels, ncol=4   , loc='center right',
+        #            bbox_to_anchor=[0.5, 1.1], 
+        #            columnspacing=1.0, labelspacing=0.0,
+        #            handletextpad=0.0, handlelength=1.5,
+        #            fancybox=True, shadow=True)
+        plt.title("Robot Heading Over Time for "+get_output_name(file))
+        mng = plt.get_current_fig_manager()
+        mng.resize(*mng.window.maxsize())
+        #plt.show()
+        plt.savefig("../results/"+get_output_name(file)+'.png')
+    except Exception as e: print(e)
 
-    if(len(t)==len(heading[robot])):# temporary fix, remove this in the future
-        plt.plot( t,heading[robot])
-        labels.append(r'robot %s' % (robot))
-plt.xlabel('time (s)')
-plt.ylabel('heading (degrees)')
-# plt.legend(labels, ncol=4   , loc='center right',
-#            bbox_to_anchor=[0.5, 1.1], 
-#            columnspacing=1.0, labelspacing=0.0,
-#            handletextpad=0.0, handlelength=1.5,
-#            fancybox=True, shadow=True)
-plt.title("Robot Heading Over Time for "+get_output_name(file))
-
-plt.show()
 bag.close()

@@ -1,0 +1,5 @@
+Total run time (s): 25.800000
+Number of robots: 12
+RMSE of flock distances 0.244019
+agent collisions 0
+wall collisions 64
