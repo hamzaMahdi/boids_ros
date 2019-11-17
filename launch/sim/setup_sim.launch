@@ -2,7 +2,7 @@
     <!-- Set arguments. Change values in this section to control various parameters of execution. -->
     <!-- There are some parameters that can be changed in other launch files but you should generally leave them as they are -->
     <!-- ********** START OF SECTION ********** -->
-    <arg name="num_of_robots" default="6"/>         <!-- Number of robots used. -->
+    <arg name="num_of_robots" default="20"/>         <!-- Number of robots used. -->
     <arg name="map_name" default="my_new_empty_10x10"/>   <!-- Name of the map used. -->
     <arg name="ctrl_loop_freq" default="10"/>       <!-- Frequency used by Reynolds rules. -->
     <arg name="data_stream_freq" default="10"/>     <!-- Position streaming frequency, used by Kalman filter. -->

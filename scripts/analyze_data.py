@@ -6,10 +6,10 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.axes3d import get_test_data
-# This import registers the 3D projection, but is otherwise unused.
-from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 unused import
+from mpl_toolkits.mplot3d import Axes3D  
 from sphero_formation.msg import collision_detection
-from mpl_toolkits.mplot3d import Axes3D
+
+
 # average the positions of all robots at every sample
 def average_positions(arr,total_num_of_robots):
     # find shortest array because some messages are lost in rosbag
@@ -54,12 +54,14 @@ def calculate_distance(xpos,avg_xpos,ypos,avg_ypos,total_num_of_robots):
     for robot in range(0,total_num_of_robots):
         distance.append(norm(xpos[robot],avg_xpos,ypos[robot],avg_ypos))
     return distance
+
 def get_heading(xheading,yheading,total_num_of_robots):
     heading = [[] for i in range(total_num_of_robots)]
     for robot in range(0,total_num_of_robots):
         for i in range(len(yheading[robot])):
             heading[robot].append(math.degrees(math.atan2(yheading[robot][i], xheading[robot][i]))  )
     return heading
+
 # data extractor
 def extract_data(bag,total_num_of_robots):
     boids = [0 for i in range(total_num_of_robots)]
@@ -91,12 +93,15 @@ def extract_data(bag,total_num_of_robots):
             xpos[robot].append(boid_pose[0])
             ypos[robot].append(boid_pose[1])
     return xpos,ypos,total_agent_collisions,total_wall_collisions,collision_mask,xheading,yheading
-    
+
+def get_output_name (file):
+    return (file.split('/')[-1]).split('.')[0] 
+
 # read bag file
 # TODO: make the name of the file a parameter
 file = str(sys.argv[1])
-bag = rosbag.Bag(file) 
-f = open(file+'.txt', "w")
+bag = rosbag.Bag(file)
+f = open("../results/"+get_output_name(file)+'.txt', "w")
 start_time = bag.get_start_time()
 end_time = bag.get_end_time()
 total_time = end_time - start_time
@@ -156,7 +161,7 @@ plt.legend(labels, ncol=4   , loc='lower center',
            columnspacing=1.0, labelspacing=0.0,
            handletextpad=0.0, handlelength=1.5,
            fancybox=True, shadow=True)
-plt.title("Robot Position Over Time")
+plt.title("Robot Position Over Time for "+get_output_name(file))
 
 fig.add_subplot(2, 1, 2)
 labels = []
@@ -180,7 +185,7 @@ plt.ylabel('heading (degrees)')
 #            columnspacing=1.0, labelspacing=0.0,
 #            handletextpad=0.0, handlelength=1.5,
 #            fancybox=True, shadow=True)
-plt.title("Robot Heading Over Time")
+plt.title("Robot Heading Over Time for "+get_output_name(file))
 
 plt.show()
 bag.close()
