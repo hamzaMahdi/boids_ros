@@ -221,7 +221,7 @@ class Boid(object):
     def orient(self, force, target):
         '''compute linear vel based on heading'''
         a = force.x - target
-        side_scaling = a * -0.1
+        side_scaling = a * -0.05
         main_direction = side_scaling
         return main_direction
 
