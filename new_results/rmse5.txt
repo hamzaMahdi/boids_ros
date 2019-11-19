@@ -1,0 +1,7 @@
+trial 1 RMSE: 0.376496
+trial 2 RMSE: 0.352889
+trial 3 RMSE: 0.373350
+trial 4 RMSE: 0.427093
+trial 5 RMSE: 0.364694
+average: 0.378905
+Standard Deviation of data is 0.025445961222211155 
