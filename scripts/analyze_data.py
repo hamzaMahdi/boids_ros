@@ -110,16 +110,21 @@ def get_output_name(file):
 # Read bag file
 # The dictionary refers to how many robots are in each test case.
 # The keys are the test cases and the values are the robot numbers
+# NOTE: this is an old dictionary. The trials have been updated to only use 20 robots
 num_robot_dict = {1: 6, 2: 6, 3: 6, 4: 6, 5: 6, 6: 12, 7: 12, 8: 12, 9: 12, 10: 12, 11: 20,
                   12: 20, 13: 20, 14: 20, 15: 20, 16: 6, 17: 6, 18: 6, 19: 12, 20: 12, 21: 12,
                   22: 20, 23: 20, 24: 20, 25: 6, 26: 6, 27: 6, 28: 12, 29: 12, 30: 12, 31: 20, 32: 20, 33: 20}
 
 RMSE_output_all = [] #stores the means of all conditions
 RMSE_sd_output_all = [] #stores the standard deviation of all conditions
+heading_RMSE_output_all = [] #stores the means of all conditions
+heading_RMSE_sd_output_all = [] #stores the standard deviation of all conditions
 anova_cohesion = []
+heading_anova_cohesion = []
 for i in range(1, 10):
     # file = str(sys.argv[1])
-    RMSE_output = []
+    RMSE_output = [] # save for 5 trials
+    heading_RMSE_output = [] # save for 5 trials
     g = open("../new_results/rmse" + str(i) + '.txt', "w")
     for j in range(1,6):
         file = '../data/test_' + str(i) + '_' + str(j) + '.bag'
@@ -142,6 +147,8 @@ for i in range(1, 10):
             avg_pos = average_positions(pos, total_num_of_robots)
             avg_RMSE = average_RMSE(pos, avg_pos, total_num_of_robots)
             heading = get_heading(xheading, yheading, total_num_of_robots)
+            avg_heading = average_positions(heading,total_num_of_robots)
+            heading_RMSE = average_RMSE(heading,avg_heading,total_num_of_robots)
             print("Total run time (s): %f" % total_time)
             print("RMSE of flock distances %f" % avg_RMSE)
             print("agent collisions %d" % total_agent_collisions)
@@ -151,8 +158,9 @@ for i in range(1, 10):
             f.write("RMSE of flock distances %f\n" % avg_RMSE)
             f.write("agent collisions %d\n" % total_agent_collisions)
             f.write("wall collisions %d\n" % total_wall_collisions)
-            g.write('trial %d RMSE: %f\n' % (j,  avg_RMSE))
+            g.write('trial %d proximity RMSE: %f and heading RMSE: %f\n' % (j,  avg_RMSE,heading_RMSE))
             RMSE_output.append(avg_RMSE)
+            heading_RMSE_output.append(heading_RMSE)
             f.close()
             # for robot_idx in range(0, total_num_of_robots):
             #     for robot2_idx in range(0, total_num_of_robots):
@@ -221,26 +229,35 @@ for i in range(1, 10):
             plt.savefig("../new_results/" + get_output_name(file) + '.png')
         except Exception as e:
             print(e)
-    anova_cohesion.append(RMSE_output)
-    output =np.mean(RMSE_output)
-    g.write('average: %f\n' %output)
-    sd = np.std(RMSE_output)
+    anova_cohesion.append(RMSE_output) # stores the non-averaged RMSE values for p-value calculation later
+    heading_anova_cohesion.append(heading_RMSE_output)
+    output =np.mean(RMSE_output) # average RMSE values so we can generate bar graph and record averages
+    heading_output = np.mean(heading_RMSE_output)
+    g.write('average proximity (cohesion) RMSE: %f\n' %output)
+    sd = np.std(RMSE_output) # calculate standard deviation across 5 trials
+    heading_sd = np.std(heading_RMSE_output)
     g.write("Standard Deviation of data is % s \n"
           % (np.std(RMSE_output)))
     g.close() # close summary file for each group
     RMSE_output_all.append(output)  # stores the means of all conditions
     RMSE_sd_output_all.append(sd)  # stores the standard deviation of all conditions
-
+    heading_RMSE_output_all.append(heading_output)
+    heading_RMSE_sd_output_all.append(heading_sd)
     plt.close('all') # close all plots
 
     # plot bar chart for the three related cases
     if(i==3 or i==6 or i == 9):
         print(anova_cohesion[i-3:i])
         h  = open("../new_results/significance" + str(i) + '.txt', "w")
+        # analysis of variance using the krushkal method. References can be found in:
+        # https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.kruskal.html#scipy.stats.kruskal
+        # https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.f_oneway.html
+        # http://www.biostathandbook.com/onewayanova.html
         t, p = kruskal(*anova_cohesion[i-3:i])
         print(p)
         h.write(str(p))
-        h.close()
+        h.close() # close file where we store the p-value
+
         fig, ax = plt.subplots()
         if(i==3):
             bars = ['update frequency: 1','update frequency: 10','update frequency: 20']
