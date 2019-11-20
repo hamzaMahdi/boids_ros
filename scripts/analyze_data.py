@@ -106,7 +106,48 @@ def extract_data(bag, total_num_of_robots):
 def get_output_name(file):
     return (file.split('/')[-1]).split('.')[0]
 
+def bar_graph(data,sd,i,cohesion):
+    fig, ax = plt.subplots()
+    if (i == 3):
+        bars = ['update frequency: 1', 'update frequency: 10', 'update frequency: 20']
+        if(cohesion):
+            ax.set_title('Effect of Changing the Control Loop Frequency on Cohesion of Flock')
+        else:
+            ax.set_title('Effect of Changing the Control Loop Frequency on Alignment of Flock')
+    elif i == 6:
+        bars = ['minimum approach distance (m): 0.5', 'minimum approach distance (m): 0.7',
+                'minimum approach distance (m): 1']
+        if cohesion:
+            ax.set_title('Effect of Changing the Minimum Distance Allowed Between Agents on Cohesion of Flock')
+        else:
+            ax.set_title('Effect of Changing the Minimum Distance Allowed Between Agents on Alignment of Flock')
+    else:
+        bars = ['separation constant= 1, obstacle avoidance constant=2',
+                'separation constant= 1, obstacle avoidance constant=1',
+                'separation constant= 2, obstacle avoidance constant=1']
+        if cohesion:
+            ax.set_title('Effect of Changing the Separation/Avoidance Constants on Cohesion of Flock')
+        else:
+            ax.set_title('Effect of Changing the Separation/Avoidance Constants on Alignment of Flock')
+    x = np.arange(len(bars))
+    # Build the plot
 
+    ax.bar(x, data[i - 3:i], yerr=sd[i - 3:i])
+    if cohesion:
+        ax.set_ylabel('Mean RMSE of agents positions')
+    else:
+        ax.set_ylabel('Mean RMSE of agents headings')
+    ax.set_xticks(x)
+    ax.set_xticklabels(bars)
+
+    ax.yaxis.grid(True)
+    # Save the figure and show
+    if cohesion:
+        plt.savefig("../new_results/" + 'bar_plot_with_error_bars test ' + str(i) + '.png')
+    else:
+        plt.savefig("../new_results/" + 'heading bar_plot_with_error_bars test ' + str(i) + '.png')
+    plt.show()
+    plt.close('all')
 # Read bag file
 # The dictionary refers to how many robots are in each test case.
 # The keys are the test cases and the values are the robot numbers
@@ -233,11 +274,16 @@ for i in range(1, 10):
     heading_anova_cohesion.append(heading_RMSE_output)
     output =np.mean(RMSE_output) # average RMSE values so we can generate bar graph and record averages
     heading_output = np.mean(heading_RMSE_output)
-    g.write('average proximity (cohesion) RMSE: %f\n' %output)
     sd = np.std(RMSE_output) # calculate standard deviation across 5 trials
     heading_sd = np.std(heading_RMSE_output)
+
+
+    g.write('average proximity (cohesion) RMSE: %f\n' %output)
     g.write("Standard Deviation of data is % s \n"
-          % (np.std(RMSE_output)))
+          % (sd))
+    g.write('average alignment RMSE: %f\n' % heading_output)
+    g.write("Standard Deviation of data for alignment is % s \n"
+            % (heading_sd))
     g.close() # close summary file for each group
     RMSE_output_all.append(output)  # stores the means of all conditions
     RMSE_sd_output_all.append(sd)  # stores the standard deviation of all conditions
@@ -254,34 +300,12 @@ for i in range(1, 10):
         # https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.f_oneway.html
         # http://www.biostathandbook.com/onewayanova.html
         t, p = kruskal(*anova_cohesion[i-3:i])
+        heading_t, heading_p = kruskal(*heading_anova_cohesion[i - 3:i])
         print(p)
-        h.write(str(p))
+        h.write('signigicance across cohesion values: h-value %f, p-value %f\n'%(t,p))
+        h.write('signigicance across alignment values: h-value %f, p-value %f\n' % (heading_t, heading_p))
         h.close() # close file where we store the p-value
-
-        fig, ax = plt.subplots()
-        if(i==3):
-            bars = ['update frequency: 1','update frequency: 10','update frequency: 20']
-            ax.set_title('Effect of Changing the Control Loop Frequency on Cohesion of Flock')
-        elif i==6:
-            bars = ['minimum approach distance (m): 0.5', 'minimum approach distance (m): 0.7',
-                    'minimum approach distance (m): 1']
-            ax.set_title('Effect of Changing the Minimum Distance Allowed Between Agents on Cohesion of Flock')
-        else:
-            bars = ['separation constant= 1, obstacle avoidance constant=2',
-                    'separation constant= 1, obstacle avoidance constant=1',
-                    'separation constant= 2, obstacle avoidance constant=1']
-            ax.set_title('Effect of Changing the Separation/Avoidance Constants on Cohesion of Flock')
-        x = np.arange(len(bars))
-        # Build the plot
-
-        ax.bar(x, RMSE_output_all[i-3:i],yerr = RMSE_sd_output_all[i-3:i])
-        ax.set_ylabel('Mean RMSE of agent positions')
-        ax.set_xticks(x)
-        ax.set_xticklabels(bars)
-
-        ax.yaxis.grid(True)
-
-        # Save the figure and show
-        plt.savefig("../new_results/" + 'bar_plot_with_error_bars test '+str(i)+'.png')
+        bar_graph(RMSE_output_all,RMSE_sd_output_all,i,cohesion=True)
+        bar_graph(heading_RMSE_output_all, heading_RMSE_sd_output_all, i, cohesion=False)
     plt.close('all')
 bag.close()

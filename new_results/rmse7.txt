@@ -1,7 +1,9 @@
-trial 1 RMSE: 0.295454
-trial 2 RMSE: 0.271574
-trial 3 RMSE: 0.235743
-trial 4 RMSE: 0.315304
-trial 5 RMSE: 0.307910
-average: 0.285197
+trial 1 proximity RMSE: 0.295454 and heading RMSE: 14.458877
+trial 2 proximity RMSE: 0.271574 and heading RMSE: 17.172304
+trial 3 proximity RMSE: 0.235743 and heading RMSE: 8.712848
+trial 4 proximity RMSE: 0.315304 and heading RMSE: 15.140091
+trial 5 proximity RMSE: 0.307910 and heading RMSE: 16.390806
+average proximity (cohesion) RMSE: 0.285197
 Standard Deviation of data is 0.02884033268686037 
+average alignment RMSE: 14.374985
+Standard Deviation of data for alignment is 2.984652365327909 

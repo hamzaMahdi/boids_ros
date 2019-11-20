@@ -269,7 +269,7 @@ class Boid(object):
             force += cohesion * self.cohesion_factor
             force += separation * self.separation_factor
             force += avoid * self.avoid_factor
-            force.x+= self.orient(force,1) #go right
+            #force.x+= self.orient(force,1) #go right
             force.limit(self.max_force)
             # those are not necessary (can be made into a single constant) but nice since they contain actual formualae
             acceleration = force / self.mass

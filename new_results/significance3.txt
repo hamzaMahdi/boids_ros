@@ -1,1 +1,2 @@
-0.020858369425214702
+signigicance across cohesion values: h-value 7.740000, p-value 0.020858
+signigicance across alignment values: h-value 10.820000, p-value 0.004472
