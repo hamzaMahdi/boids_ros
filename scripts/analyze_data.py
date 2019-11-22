@@ -109,34 +109,34 @@ def get_output_name(file):
 def bar_graph(data,sd,i,cohesion):
     fig, ax = plt.subplots()
     if (i == 3):
-        bars = ['update frequency: 1', 'update frequency: 10', 'update frequency: 20']
-        if(cohesion):
-            ax.set_title('Effect of Changing the Control Loop Frequency on Cohesion of Flock')
-        else:
-            ax.set_title('Effect of Changing the Control Loop Frequency on Alignment of Flock')
+        bars = ['frequency = 1', 'frequency = 10', 'frequency = 20']
+        # if(cohesion):
+        #     ax.set_title('Effect of Changing the Control Loop Frequency on Cohesion of Flock')
+        # else:
+        #     ax.set_title('Effect of Changing the Control Loop Frequency on Alignment of Flock')
     elif i == 6:
-        bars = ['minimum approach distance (m): 0.5', 'minimum approach distance (m): 0.7',
-                'minimum approach distance (m): 1']
-        if cohesion:
-            ax.set_title('Effect of Changing the Minimum Distance Allowed Between Agents on Cohesion of Flock')
-        else:
-            ax.set_title('Effect of Changing the Minimum Distance Allowed Between Agents on Alignment of Flock')
+        bars = ['minimum approach \ndistance (m): 0.5', 'minimum approach \ndistance (m): 0.7',
+                'minimum approach \ndistance (m): 1']
+        # if cohesion:
+        #     ax.set_title('Effect of Changing the Minimum Distance Allowed Between Agents on Cohesion of Flock')
+        # else:
+        #     ax.set_title('Effect of Changing the Minimum Distance Allowed Between Agents on Alignment of Flock')
     else:
-        bars = ['separation constant= 1, obstacle avoidance constant=2',
-                'separation constant= 1, obstacle avoidance constant=1',
-                'separation constant= 2, obstacle avoidance constant=1']
-        if cohesion:
-            ax.set_title('Effect of Changing the Separation/Avoidance Constants on Cohesion of Flock')
-        else:
-            ax.set_title('Effect of Changing the Separation/Avoidance Constants on Alignment of Flock')
+        bars = ['separation constant= 1,\nobstacle avoidance constant=2',
+                'separation constant= 1,\nobstacle avoidance constant=1',
+                'separation constant= 2,\nobstacle avoidance constant=1']
+        # if cohesion:
+        #     ax.set_title('Effect of Changing the Separation/Avoidance Constants on Cohesion of Flock')
+        # else:
+        #     ax.set_title('Effect of Changing the Separation/Avoidance Constants on Alignment of Flock')
     x = np.arange(len(bars))
     # Build the plot
 
     ax.bar(x, data[i - 3:i], yerr=sd[i - 3:i])
     if cohesion:
-        ax.set_ylabel('Mean RMSE of agents positions')
+        ax.set_ylabel('Mean cohesion of agents')
     else:
-        ax.set_ylabel('Mean RMSE of agents headings')
+        ax.set_ylabel('Mean alignment of agents')
     ax.set_xticks(x)
     ax.set_xticklabels(bars)
 
