@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# from __future__ import division
 
 import math
 import rospy
@@ -231,15 +230,11 @@ class Boid(object):
         # While waiting to start, send zero velocity and decrease counter.
         if self.wait_count > 0:
             self.wait_count -= 1
-            rospy.logdebug("wait " + '{}'.format(self.wait_count))
-            rospy.logdebug("velocity:\n%s", Twist().linear)
             return Twist(), None, [False, False]
 
         # Send initial velocity and decrease counter.
         elif self.start_count > 0:
             self.start_count -= 1
-            rospy.logdebug("start " + '{}'.format(self.start_count))
-            rospy.logdebug("velocity:\n%s", self.initial_velocity.linear)
             return self.initial_velocity, None, [False, False]
 
         # Normal operation, velocity is determined using Reynolds' rules.
@@ -247,7 +242,6 @@ class Boid(object):
             self.velocity = get_agent_velocity(my_agent)
             self.old_heading = self.velocity.arg()
             self.old_velocity = Vector2(self.velocity.x, self.velocity.y)
-            rospy.logdebug("old_velocity: %s", self.velocity)
 
             # detect collisions
             collision_vector = self.check_collisions(nearest_agents,obstacles)
@@ -257,28 +251,18 @@ class Boid(object):
             separation = self.rule2_separation(nearest_agents)
             alignment = self.rule3_alignment(nearest_agents)
             avoid = self.braitenberg(obstacles)
-
-            rospy.logdebug("alignment:    %s", alignment)
-            rospy.logdebug("cohesion:     %s", cohesion)
-            rospy.logdebug("separation:   %s", separation)
-            rospy.logdebug("avoid:        %s", avoid)
-
             # Add components together and limit the output.
             force = Vector2()
             force += alignment * self.alignment_factor
             force += cohesion * self.cohesion_factor
             force += separation * self.separation_factor
             force += avoid * self.avoid_factor
-            #force.x+= self.orient(force,1) #go right
+            force.x+= self.orient(force,1) #go right
             force.limit(self.max_force)
             # those are not necessary (can be made into a single constant) but nice since they contain actual formualae
             acceleration = force / self.mass
             self.velocity += acceleration / self.frequency
             self.velocity.limit(self.max_speed)
-
-            rospy.logdebug("force:        %s", force)
-            rospy.logdebug("acceleration: %s", acceleration / self.frequency)
-            rospy.logdebug("velocity:     %s\n", self.velocity)
 
             # Return the the velocity as Twist message.
             vel = Twist()
