@@ -34,59 +34,6 @@ def get_obst_position(obst):
 
 class Boid(object):
 
-    def __init__(self, initial_velocity_x, initial_velocity_y, wait_count, start_count, frequency):
-        """Create an empty boid and update parameters."""
-        self.position = Vector2()
-        self.velocity = Vector2()
-        self.mass = 0.18  # Mass of Sphero robot in kilograms
-        self.wait_count = wait_count  # Waiting time before starting
-        self.start_count = start_count  # Time during which initial velocity is being sent
-        self.frequency = frequency  # Control loop frequency
-        # make sure that if the object is already in collision, it does not count again
-        self.prev_collision = False
-        self.prev_wall_collision = False
-        # Set initial velocity
-        self.initial_velocity = Twist()
-        self.initial_velocity.linear.x = initial_velocity_x
-        self.initial_velocity.linear.y = initial_velocity_y
-
-        # This dictionary holds values of each flocking components and is used
-        # to pass them to the visualization markers publisher.
-        self.viz_components = {}
-
-    def update_parameters(self, params):
-        """Save Reynolds controller parameters in class variables."""
-        self.alignment_factor = params['alignment_factor']
-        self.cohesion_factor = params['cohesion_factor']
-        self.separation_factor = params['separation_factor']
-        self.avoid_factor = params['avoid_factor']
-        self.max_speed = params['max_speed']
-        self.max_force = params['max_force']
-        self.crowd_radius = params['crowd_radius']
-        self.search_radius = params['search_radius']
-        self.avoid_radius = params['avoid_radius']
-        self.avoid_kp = params['avoid_kp']
-
-        # Scaling is calculated so that force is maximal when agent is
-        # 0.85 * search_radius away from obstacle. Formula was obtained from https://github.com/mkrizmancic
-        self.avoid_scaling = 1 / ((0.85 * self.search_radius) ** 2 * self.max_force)
-
-        # Scaling is calculated so that cohesion and separation forces
-        # are equal when agents are crowd_radius apart. Formula was obtained from https://github.com/mkrizmancic
-        self.separation_gain = self.search_radius / self.crowd_radius ** 3 / self.max_force
-
-        rospy.loginfo(rospy.get_caller_id() + " -> Parameters updated")
-        rospy.logdebug('alignment_factor:  %s', self.alignment_factor)
-        rospy.logdebug('cohesion_factor:  %s', self.cohesion_factor)
-        rospy.logdebug('separation_factor:  %s', self.separation_factor)
-        rospy.logdebug('avoid_factor:  %s', self.avoid_factor)
-        rospy.logdebug('max_speed:  %s', self.max_speed)
-        rospy.logdebug('max_force:  %s', self.max_force)
-        rospy.logdebug('crowd_radius:  %s', self.crowd_radius)
-        rospy.logdebug('search_radius:  %s', self.search_radius)
-        rospy.logdebug('avoid_radius:  %s', self.avoid_radius)
-
-
     def check_collisions(self, nearest_agents,obstacles):
         sphero_radius = 0.036
         collision = False
@@ -128,7 +75,6 @@ class Boid(object):
         # average but dont divide by zero.
         if nearest_agents:
             direction = mean_position / len(nearest_agents)
-            rospy.logdebug("cohesion*:    %s", direction)
             # limit the force to max if necessary
             direction.set_mag((self.max_force * (direction.norm() / self.search_radius)))
             if direction.norm() > self.max_force:
@@ -158,7 +104,6 @@ class Boid(object):
             # 3 * max force because priority is given to obstacle avoidance as suggested Conrad Parker
             if direction.norm() > 3 * self.max_force:
                 direction.set_mag(3 * self.max_force)
-        rospy.logdebug("separation*:  %s", direction)
         return direction
 
     def rule3_alignment(self, nearest_agents):
@@ -167,7 +112,6 @@ class Boid(object):
         # Find mean direction of neighboring agents.
         for agent in nearest_agents:
             mean_velocity += get_agent_velocity(agent)
-        rospy.logdebug("alignment*:   %s", mean_velocity)
         if nearest_agents:
             mean_velocity.set_mag(self.max_speed)
             steer = mean_velocity - self.velocity
@@ -207,9 +151,6 @@ class Boid(object):
 
         if count:
             safety_direction /= count
-
-        rospy.logdebug("avoids*:      %s", main_direction)
-
         return main_direction + safety_direction
 
     def follow_heading(self, angle, target):
@@ -279,3 +220,44 @@ class Boid(object):
             self.viz_components['velocity'] = self.velocity
             self.viz_components['estimated'] = self.old_velocity
             return vel, self.viz_components, collision_vector
+
+    def __init__(self, initial_velocity_x, initial_velocity_y, wait_count, start_count, frequency):
+        """Create an empty boid and update parameters."""
+        self.position = Vector2()
+        self.velocity = Vector2()
+        self.mass = 0.18  # Mass of Sphero robot in kilograms
+        self.wait_count = wait_count  # Waiting time before starting
+        self.start_count = start_count  # Time during which initial velocity is being sent
+        self.frequency = frequency  # Control loop frequency
+        # make sure that if the object is already in collision, it does not count again
+        self.prev_collision = False
+        self.prev_wall_collision = False
+        # Set initial velocity
+        self.initial_velocity = Twist()
+        self.initial_velocity.linear.x = initial_velocity_x
+        self.initial_velocity.linear.y = initial_velocity_y
+
+        # This dictionary holds values of each flocking components and is used
+        # to pass them to the visualization markers publisher.
+        self.viz_components = {}
+
+    def update_parameters(self, params):
+        """Save Reynolds controller parameters in class variables."""
+        self.alignment_factor = params['alignment_factor']
+        self.cohesion_factor = params['cohesion_factor']
+        self.separation_factor = params['separation_factor']
+        self.avoid_factor = params['avoid_factor']
+        self.max_speed = params['max_speed']
+        self.max_force = params['max_force']
+        self.crowd_radius = params['crowd_radius']
+        self.search_radius = params['search_radius']
+        self.avoid_radius = params['avoid_radius']
+        self.avoid_kp = params['avoid_kp']
+
+        # Scaling is calculated so that force is maximal when agent is
+        # 0.85 * search_radius away from obstacle. Formula was obtained from https://github.com/mkrizmancic
+        self.avoid_scaling = 1 / ((0.85 * self.search_radius) ** 2 * self.max_force)
+
+        # Scaling is calculated so that cohesion and separation forces
+        # are equal when agents are crowd_radius apart. Formula was obtained from https://github.com/mkrizmancic
+        self.separation_gain = self.search_radius / self.crowd_radius ** 3 / self.max_force
