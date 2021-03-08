@@ -1,5 +1,5 @@
 ## About
-Forked from https://github.com/mkrizmancic/sphero_formation.
+Heavily modified and forked from https://github.com/mkrizmancic/sphero_formation.
 
 
 This is a modified repository meant to explore braitenberg bahviour in flocks.
